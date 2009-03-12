@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<project name="bdcp" default="jar" basedir=".">
+
+    <property environment="env"/>
+
+    <property file="build.properties"/>
+
+    <property name="project"      value="bdcp"/>
+    <property name="javadocdir"   value="javadoc"/>
+    <property name="version"      value="1.0.0"/>
+    <property name="vendor"       value="Tailrank Inc (Spinn3r)"/>
+
+    <path id="project.classpath">
+
+        <pathelement location="compile"/>
+
+        <fileset dir="lib">
+             <include name="*.jar"/>
+        </fileset>
+
+    </path>
+
+    <target name="compile">
+
+        <mkdir dir="compile"/>
+
+        <javac classpathref="project.classpath"
+               nowarn="on"
+               source="1.5"
+               target="1.5"
+               srcdir="src/java"
+               destdir="compile"
+               fork="true"
+               memoryMaximumSize="512M"
+               deprecation="no"
+               debug="true">
+            <include name="**/*.java"/>
+            <exclude name="**/*SExpander.java"/>
+        </javac>
+
+    </target>
+    
+    <target name="clean">
+        <delete dir="compile"/>
+        <delete dir="target"/>
+    </target>
+
+    <target name="jar" depends="compile">
+
+        <mkdir dir="target"/>
+        <mkdir dir="compile/META-INF"/>
+
+        <tstamp>
+          <format property="timestamp" pattern="MM-dd-yyyy hh:mm:ss 'PST'" locale="PST"/>
+        </tstamp>
+
+        <manifest file="compile/META-INF/MANIFEST.MF">
+          <attribute name="Built-By"       value="${user.name}"/>
+          <section name="common">
+            <attribute name="Specification-Title"       value="${project}"/>
+            <attribute name="Specification-Version"     value="${version}"/>
+            <attribute name="Specification-Vendor"      value="${vendor}"/>
+            <attribute name="Implementation-Title"      value="${project}"/>
+            <attribute name="Implementation-Version"    value="${version} - ${timestamp}"/> 
+            <attribute name="Implementation-Vendor"     value="${vendor}"/>
+          </section>
+        </manifest>
+
+        <jar compress="yes" 
+             filesetmanifest="merge"
+             jarfile="target/${project}-${version}.jar">
+
+            <fileset dir="compile">
+
+                <include name="META-INF/**"/>
+                <include name="com/**"/>
+            
+            </fileset>
+
+        </jar>
+
+    </target>
+
+    <target name="site">
+
+      <mkdir dir="site"/>
+      
+      <copy todir="site">
+        <fileset dir="src/web">
+          <include name="**"/>
+        </fileset>
+      </copy>
+
+      <replaceregexp match="^\s+" flags="m" replace="" byline="true">
+        <fileset dir="site/templates" includes="**/*.tpl"/>
+      </replaceregexp>
+
+    </target>
+
+    <target name="compile.test">
+
+        <javac classpathref="project.classpath"
+               nowarn="on"
+               source="1.5"
+               target="1.5"
+               srcdir="src/test"
+               destdir="compile"
+               fork="true"
+               memoryMaximumSize="512M"
+               deprecation="no"
+               debug="true">
+            <include name="**/*.java"/>
+            <exclude name="**/*SExpander.java"/>
+        </javac>
+
+    </target>
+
+    <target name="test" 
+            depends="jar,compile.test" 
+            description="Run junit tests.">
+
+        <taskdef name="junit"
+                 classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask">
+            <classpath refid="project.classpath"/>
+        </taskdef>	
+
+        <junit printsummary="on"
+               fork="true"
+               filtertrace="true"
+               haltonfailure="true"
+               showoutput="true"
+               haltonerror="true">
+
+            <classpath>
+                <path refid="project.classpath"/>
+            </classpath>
+
+            <batchtest todir="target/test-reports"> 
+
+                <fileset dir="src/test">
+                    <include name="**/Test*.java"/>
+                </fileset>
+
+            </batchtest>
+
+        </junit>
+    </target>
+
+    <target name="test-single" 
+            depends="jar,compile.test" 
+            description="Run junit tests.">
+
+        <taskdef name="junit"
+                 classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTask">
+            <classpath refid="project.classpath"/>
+        </taskdef>	
+
+        <junit printsummary="on"
+               fork="true"
+               filtertrace="false"
+               haltonfailure="true"
+               showoutput="true"
+               haltonerror="false">
+
+            <classpath>
+                <path refid="project.classpath"/>
+            </classpath>
+
+            <batchtest todir="target/test-reports"> 
+
+                <fileset dir="src/test">
+                    <include name="**/TestOffsetStorageParser.java"/>
+                </fileset>
+
+            </batchtest>
+
+        </junit>
+    </target>
+
+  <target name="javadoc" description="Generate javadoc" depends="compile">
+
+    <mkdir dir="${javadocdir}">
+    </mkdir>
+    <tstamp>
+      <format pattern="2000-yyyy" property="year">
+      </format>
+    </tstamp>
+    <property name="copyright" value="Copyright &amp;copy; Tailrank Inc. All Rights Reserved.">
+    </property>
+    <property name="title" value="BDCP API">
+    </property>
+
+    <javadoc bottom="Copyright &amp;copy; Tailrank Inc (Spinn3r). All Rights Reserved." 
+             windowtitle="Bdcp Client API" 
+             use="true" 
+             private="false" 
+             destdir="${javadocdir}" 
+             author="true" 
+             doctitle="BDCP API" 
+             version="true" 
+             sourcepath="src/java" 
+             packagenames="com.spinn3r.bdcp.*">
+
+    </javadoc>
+
+  </target>
+
+    <target name="dist" depends="jar,javadoc">
+
+        <mkdir dir="target/${project}-${version}" />
+
+        <copy todir="target/${project}-${version}">
+            <fileset dir=".">
+                <include name="bin/api-perf"/>
+                <include name="lib/*.jar"/>
+                <include name="src/java/**"/>
+                <include name="build.xml"/>
+                <include name="LICENSE"/>
+            </fileset>
+        </copy>
+
+        <copy todir="target/${project}-${version}">
+            <fileset dir="compile">
+                <include name="javadoc/**"/>
+            </fileset>
+        </copy>
+
+        <copy file="target/${project}-${version}.jar"
+              todir="target/${project}-${version}" />
+        
+        <tar destfile="target/${project}-${version}.tar">
+
+            <tarfileset dir="target">
+                <include name="${project}-${version}/**"/>
+            </tarfileset>
+
+        </tar>
+
+        <gzip src="target/${project}-${version}.tar" destfile="target/${project}-${version}.tar.gz"/>
+        <delete file="target/${project}-${version}.tar"/>
+
+    </target>
+
+</project>
